@@ -8,13 +8,23 @@ using DNS.Protocol;
 namespace DNS.Client.RequestResolver {
     public class TcpRequestResolver : IRequestResolver {
         private IPEndPoint dns;
+        private IPEndPoint localEndPoint;
 
-        public TcpRequestResolver(IPEndPoint dns) {
+        public TcpRequestResolver(IPEndPoint dns, IPEndPoint localEndPoint = default(IPEndPoint)) {
             this.dns = dns;
+            this.localEndPoint = localEndPoint;
+        }
+
+        private TcpClient InitTcpClient() {
+            if (localEndPoint == default(IPEndPoint)) {
+                return new TcpClient();
+            } else {
+                return new TcpClient(localEndPoint);
+            }
         }
 
         public async Task<IResponse> Resolve(IRequest request) {
-            using(TcpClient tcp = new TcpClient()) {
+            using(TcpClient tcp = InitTcpClient()) {
                 await tcp.ConnectAsync(dns.Address, dns.Port);
 
                 Stream stream = tcp.GetStream();

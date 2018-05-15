@@ -10,21 +10,32 @@ namespace DNS.Client.RequestResolver {
         private int timeout;
         private IRequestResolver fallback;
         private IPEndPoint dns;
+        private IPEndPoint localEndPoint;
 
-        public UdpRequestResolver(IPEndPoint dns, IRequestResolver fallback, int timeout = 5000) {
+        public UdpRequestResolver(IPEndPoint dns, IRequestResolver fallback, int timeout = 5000, IPEndPoint localEndPoint = default(IPEndPoint)) {
             this.dns = dns;
             this.fallback = fallback;
             this.timeout = timeout;
+            this.localEndPoint = localEndPoint;
         }
 
-        public UdpRequestResolver(IPEndPoint dns, int timeout = 5000) {
+        public UdpRequestResolver(IPEndPoint dns, int timeout = 5000, IPEndPoint localEndPoint = default(IPEndPoint)) {
             this.dns = dns;
             this.fallback = new NullRequestResolver();
             this.timeout = timeout;
+            this.localEndPoint = localEndPoint;
+        }
+
+        private UdpClient InitUdpClient() {
+            if (localEndPoint == default(IPEndPoint)) {
+                return new UdpClient();
+            } else {
+                return new UdpClient(localEndPoint);
+            }
         }
 
         public async Task<IResponse> Resolve(IRequest request) {
-            using(UdpClient udp = new UdpClient()) {
+            using(UdpClient udp = InitUdpClient()) {
                 await udp
                     .SendAsync(request.ToArray(), request.Size, dns)
                     .WithCancellationTimeout(timeout);
